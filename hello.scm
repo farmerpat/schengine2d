@@ -1,7 +1,11 @@
-;(require-extension sdl2)
-;(require-extension sdl2-image)
-;(require-extension coops)
-;(require-extension miscmacros)
+; apparently these are more for static linking...
+;(declare (uses sdl2))
+;(declare (uses sdl2-image))
+;(declare (uses miscmacros))
+;(declare (uses coops))
+;(declare (uses debug))
+;(declare (uses game-object))
+;(declare (uses sprite))
 
 (use
   (prefix sdl2 sdl2:)
@@ -9,21 +13,49 @@
   miscmacros
   coops
   debug
+  ;game-object
+  ;sprite
 )
 
-; why is does this think its img:load if i declared a prefix up there?
+(declare (uses game-object))
+(declare (uses sprite))
 
-;;; Initialize the parts of SDL that we need.
+;(require game-object)
+;(require sprite)
+;(load-library 'game-object "game-object.so")
+;(load-library 'sprite "sprite.so")
+;(load-relative "game-object.so")
+;(load-relative "sprite.so")
+;(load "game-object.so")
+;(load "sprite.so")
+
+; this actually worked for csi run
+;(load-relative "./game-object.scm")
+;(load-relative "./sprite.scm")
+
+;(require "game-object.so")
+;(require "sprite.so")
+
+; how wild is it that we can pass tap the eval pipe?
+;(define my-eval-proc
+  ;(lambda (exp)
+    ;(printf "i got an exp~%")
+    ;(eval exp)))
+
+;(load "classes.scm" my-eval-proc)
+
+; this is not okay. must implement
+; modules or units or ?
+;(load "game-object.scm")
+;(load "sprite.scm")
+
 (sdl2:set-main-ready!)
 (sdl2:init! '(video events joystick))
 (define img-init-successful-formats (img:init! '(jpg png tif)))
 (printf "img-init-successful-formats: ~A~%" img-init-successful-formats)
 
-;; Automatically call sdl2:quit! when program exits normally.
 (on-exit sdl2:quit!)
 
-;; Call sdl2:quit! and then call the original exception handler if an
-;; unhandled exception reaches the top level.
 (current-exception-handler
   (let ((original-handler (current-exception-handler)))
     (lambda (exception)
@@ -34,17 +66,22 @@
 (printf "Running with SDL version ~A~N" (sdl2:current-version))
 (printf "Using sdl2 egg version ~A~N" (sdl2:egg-version))
 
-(load "classes.scm")
-
-;;; Create a new window.
 (define window
   (sdl2:create-window!
-    "SDL Basics"                         ; title
-    'centered  100                       ; x, y
-    800  600                             ; w, h
-    '(shown resizable)))                 ; flag
-
-(printf "~A~%" window)
+    ; title
+    "SDL Basics"
+    ; x
+    'centered
+    ; y
+    100
+    ; w
+    800
+    ; h
+    600
+    ; flag
+    '(shown resizable)
+  )
+)
 
 (define window-renderer (sdl2:create-renderer! window))
 
@@ -54,28 +91,11 @@
 (define ship-sprite (<Sprite>-constructor 200 200 64 64 "ship.png" window-renderer))
 ;)
 
-;(let ((surface (img:load (get-img-file-name ship-sprite))))
-  ;(printf "letted surface: ~A~~%" surface)
-  ;(set-surface! ship-sprite surface))
-
-;(let ((texture (sdl2:create-texture-from-surface* (sdl2:get-renderer window) (get-surface ship-sprite))))
-  ;(set-texture! ship-sprite texture))
-
-;(printf "~A~%" ship-sprite)
-;(printf "~A~%" (get-surface ship-sprite))
-;(printf "~A~%" (get-texture ship-sprite))
-
 (define (draw-scene!)
   (set! (sdl2:render-draw-color window-renderer) (sdl2:make-color 80 80 80))
   (sdl2:render-fill-rect! window-renderer (sdl2:make-rect 0 0 800 600))
 
-  ;(let ((source-rect (sdl2:make-rect 0 0 64 64))
-        ;(dest-rect (sdl2:make-rect 100 100 64 64)))
-    ;(sdl2:render-copy! window-renderer sprite-texture source-rect dest-rect)
-  ;)
-
   (let ((rect (sdl2:make-rect 500 500 32 32)))
-    ; set draw color...
     (set! (sdl2:render-draw-color window-renderer) (sdl2:make-color 0 0 0))
     (sdl2:render-fill-rect! window-renderer rect)
   )
@@ -83,17 +103,6 @@
   (render! ship-sprite window-renderer)
   (sdl2:render-present! window-renderer)
 )
-
-;(define (draw-scene!)
-  ;(let ((window-surf (sdl2:window-surface window)))
-    ;;; Clear the whole screen using a blue background color
-    ;(sdl2:fill-rect! window-surf #f (sdl2:make-color 0 80 160))
-    ;;; Draw the smileys
-    ;(draw-obj! smiley2 window-surf)
-    ;(draw-obj! smiley1 window-surf)
-    ;;; Refresh the screen
-    ;(sdl2:update-window-surface! window))
-  ;)
 
 ;;; Restrict the window from being made too small or too big, for no
 ;;; reason except to demonstrate this feature.
@@ -105,7 +114,6 @@
         (receive (sdl2:window-size window))
         (receive (sdl2:window-maximum-size window))
         (receive (sdl2:window-minimum-size window)))
-
 
 (let ((done #f)
       (verbose? #f))

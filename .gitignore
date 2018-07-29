@@ -1,2 +1,5 @@
 hello
 test
+*.so
+*.o
+*.import.scm
