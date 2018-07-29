@@ -1,11 +1,3 @@
-; compile me with
-; csc -c -j sprite sprite.scm
-;
-; most recently compiled with:
-; csc -c -j sprite sprite.scm 
-; csc -s sprite.import.scm
-; similaryly for game-object
-
 
 ;(module sprite *
   ;(import chicken scheme)
@@ -16,24 +8,13 @@
     coops
     debug
   )
-    ;; think this should be import:
-    ;game-object
-    ;;
-    ;; a la:
-    ;; https://stackoverflow.com/questions/38986942/how-do-i-get-this-chicken-scheme-code-to-compile :
-    ;;; Only import the module; we take care of loading the code above,
-    ;;; or in the linking step when compiling.  If we had (use test-b),
-    ;;; the library would be searched for at runtime.
-    ;;; Alternatively, (use test-b) here, but add (register-feature! 'test-b)
-    ;;; to test-b.scm, which prevents the runtime from attempting to load test-b.
-    ;;;(import test-b)
-  ;)
 
-  ;(declare (uses sdl2))
-  ;(declare (uses sdl2-image))
-  ;(declare (uses miscmacros))
-  ;(declare (uses coops))
-  ;(declare (uses debug))
+  (cond-expand
+    ((not compiling)
+     (begin
+       (require "game-object.scm")))
+    (else))
+
   (declare (uses game-object))
   (declare (unit sprite))
 

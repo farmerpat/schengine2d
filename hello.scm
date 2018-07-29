@@ -1,11 +1,4 @@
-; apparently these are more for static linking...
-;(declare (uses sdl2))
-;(declare (uses sdl2-image))
-;(declare (uses miscmacros))
-;(declare (uses coops))
-;(declare (uses debug))
-;(declare (uses game-object))
-;(declare (uses sprite))
+; apparently (declare (uses _)) are more for static linking...
 
 (use
   (prefix sdl2 sdl2:)
@@ -13,41 +6,17 @@
   miscmacros
   coops
   debug
-  ;game-object
-  ;sprite
 )
+
+(cond-expand
+    ((not compiling)
+     (begin
+       (require "game-object.scm")
+       (require "sprite.scm")))
+    (else))
 
 (declare (uses game-object))
 (declare (uses sprite))
-
-;(require game-object)
-;(require sprite)
-;(load-library 'game-object "game-object.so")
-;(load-library 'sprite "sprite.so")
-;(load-relative "game-object.so")
-;(load-relative "sprite.so")
-;(load "game-object.so")
-;(load "sprite.so")
-
-; this actually worked for csi run
-;(load-relative "./game-object.scm")
-;(load-relative "./sprite.scm")
-
-;(require "game-object.so")
-;(require "sprite.so")
-
-; how wild is it that we can pass tap the eval pipe?
-;(define my-eval-proc
-  ;(lambda (exp)
-    ;(printf "i got an exp~%")
-    ;(eval exp)))
-
-;(load "classes.scm" my-eval-proc)
-
-; this is not okay. must implement
-; modules or units or ?
-;(load "game-object.scm")
-;(load "sprite.scm")
 
 (sdl2:set-main-ready!)
 (sdl2:init! '(video events joystick))
@@ -135,7 +104,6 @@
            ((escape q)
             (set! done #t))))
 
-
         ;;; Joystick added (plugged in)
         ;((joy-device-added)
          ;;; Open the joystick so we start receiving events for it.
@@ -198,6 +166,7 @@
   )
 )
 
+; this fails when compiled...
 (destroy! ship-sprite)
 (sdl2:destroy-window! window)
 (img:quit!)

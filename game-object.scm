@@ -4,9 +4,13 @@
   (use coops)
 
   (declare (unit game-object))
+  ; i don't THINK declare uses are
+  ; necessary when we are buildling
+  ; all the object files individually
+  ; and not just giving csc like 10 source files at once...
   ;(declare (uses coops))
 
-  (define-class <Vector2> ()
+    (define-class <Vector2> ()
     (
      (x initform: 0 reader: get-x writer: set-x! )
      (y initform: 0 reader: get-y writer: set-y! )
