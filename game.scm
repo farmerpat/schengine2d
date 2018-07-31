@@ -1,20 +1,26 @@
+; right now...
+; csc -c -j game-object game-object.scm
+; csc -c -j sprite sprite.scm
+; csc -c -j scene scene.scm
+; csi
+; > ,l game.scm
+
+
+;(declare (uses scene))
+;(declare (uses sprite))
+;(declare (unit game))
+
+; if we run csi from the same directory our .import.scm files are located
+; for our project's modules, this will work as expected with ,l game.scm
 (use
   (prefix sdl2 sdl2:)
   (prefix sdl2-image img:)
+  (prefix sprite spr:)
   miscmacros
   coops
   debug
+  scene
 )
-
-(cond-expand
-  ((not compiling)
-   (begin
-     ; (require "scene.scm")
-     (printf "not compiling~%")))
-  (else))
-
-;(declare (uses game-object))
-(declare (unit game))
 
 (define-class <Game> ()
   (
@@ -32,37 +38,53 @@
     (window-height initform: 768 reader: get-window-height writer: set-window-height!)
     (title initform: "Schengine" reader: get-title writer: set-title!)
     (do-quit initform: #f reader: get-do-quit)
-    (scenes initform: '())
+    (scenes initform: '() reader: get-scenes writer: set-scenes!)
     (window initform: '() reader: get-window)
     (current-window-renderer initform: #f reader: get-current-window-renderer writer: set-current-window-renderer)
+    (current-scene initform: '() reader: get-current-scene writer: set-current-scene)
     (verbose-logging initform: #f reader: get-verbose-logging)
   )
 )
 
+; need current-window-renderer and current-scene to be set....
 (define (<Game>-constructor #!optional (title "Schengine") (w 1024) (h 768) (scenes '()))
   (let ((g (make <Game>)))
     (set-window-width! g w)
     (set-window-height! g h)
     (set-title! g title)
+    (set-scenes! g scenes)
     g
   )
 )
 
-(define-generic (set-verbose-logging!))
-(define-generic (clear-verbose-logging!))
-(define-generic (set-do-quit!))
-(define-generic (clear-do-quit!))
-(define-generic (set-window!))
-(define-generic (init!))
-(define-generic (run!))
-(define-generic (destroy!))
-(define-generic (feed-input-to-current-scene))
-(define-generic (render-current-scene))
-(define-generic (process-physics-for-current-scene g))
+(define (specific-proof-of-concept-<Game>-construct-and-run)
+  (let ((g (make <Game>)))
+    (set-window-width! g 1024)
+    (set-window-height! g 768)
+    (set-title! g "_test_game_")
+    (init! g)
+    (let* ((sprite (spr:<Sprite>-constructor 200 200 64 64 "ship.png" (get-current-window-renderer g)))
+           (first-scene (make <Scene> 'name "_test_scene_" 'game-objects (list sprite))))
+      (set-current-scene g first-scene)
+      (set-scenes! g (list first-scene))
+      g)))
 
-(define-method (render-current-scene (g <Game>)) '())
-(define-method (feed-input-to-current-scene (g <Game>)) '())
-(define-method (process-physics-for-current-scene (g <Game>)) '())
+(define-method (render-current-scene (g <Game>))
+  (when (eq? (class-of (get-current-scene g)) <Scene>)
+    (display "my current scene is a <Scene>")
+    (newline)
+    (let ((wr (get-current-window-renderer g)))
+      (printf "wr is ~A~%" wr)
+      (render-game-objects (get-current-scene g) wr))))
+      ;(render-game-objects (get-current-scene g) (get-current-window-renderer g)) )))
+
+(define-method (feed-input-to-current-scene (g <Game>) event)
+  (when (eq? (class-of (get-current-scene g)) <Scene>)
+    (process-event (get-current-scene g))))
+
+(define-method (process-physics-for-current-scene (g <Game>))
+  (when (eq? (class-of (get-current-scene g)) <Scene>)
+    (step-physics (get-current-scene g))))
 
 (define-method (set-verbose-logging! (g <Game>))
   (set! (slot-value g 'verbose-logging) #t))
@@ -88,7 +110,8 @@
         100
         (get-window-width g)
         (get-window-height g)
-        '(shown resizable)))))
+        '(shown resizable)))
+    (set-current-window-renderer g (sdl2:create-renderer! (get-window g)))))
 
 ; children should really override this...
 ; as it stands now the would want their
@@ -101,6 +124,7 @@
 
   (on-exit sdl2:quit!)
 
+  ; does this even work when not run globally?
   (current-exception-handler
     (let ((original-handler (current-exception-handler)))
       (lambda (exception)
@@ -128,11 +152,8 @@
            ((escape q)
             (set-do-quit! g)))))
 
-      ;; /home/pconnelly/hacks/Pengine2D/Pengine2D/Game.cpp
-      ;; const Uint8 *keyStates = SDL_GetKeyboardState(NULL);
-
       ;; do some work on the scene
-      (feed-input-to-current-scene g)
+      (feed-input-to-current-scene g e)
       (process-physics-for-current-scene g)
       (render-current-scene g)
     )
@@ -150,3 +171,6 @@
   (img:quit!)
   (sdl2:quit!)
 )
+
+(define g (specific-proof-of-concept-<Game>-construct-and-run ))
+(run! g)

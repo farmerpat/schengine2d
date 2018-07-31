@@ -1,26 +1,19 @@
+; csc -c -j sprite sprite.scm
 
-;(module sprite *
-  ;(import chicken scheme)
+(module sprite *
+  (import chicken scheme)
   (use
     (prefix sdl2 sdl2:)
     (prefix sdl2-image img:)
+    extras
     miscmacros
     coops
     debug
+    game-object
   )
-
-  (cond-expand
-    ((not compiling)
-     (begin
-       (require "game-object.scm")))
-    (else))
 
   (declare (uses game-object))
   (declare (unit sprite))
-
-  ; how do?
-  ; must chicken-install eggs for this build?
-  ;(declare (uses game-object))
 
   (define-class <Sprite> (<GameObject>)
     (
@@ -97,4 +90,4 @@
       (sdl2:destroy-texture! (get-texture s))
     )
   )
-;)
+)

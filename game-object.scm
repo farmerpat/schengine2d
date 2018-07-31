@@ -1,21 +1,13 @@
-
-;(module game-object *
-  ;(import chicken scheme)
-  (use coops)
+; csc -c -j game-object game-object.scm
+(module game-object *
+  (import chicken scheme)
+  (use coops extras)
 
   (declare (unit game-object))
-  ; i don't THINK declare uses are
-  ; necessary when we are buildling
-  ; all the object files individually
-  ; and not just giving csc like 10 source files at once...
-  ;(declare (uses coops))
 
-    (define-class <Vector2> ()
-    (
-     (x initform: 0 reader: get-x writer: set-x! )
-     (y initform: 0 reader: get-y writer: set-y! )
-    )
-  )
+  (define-class <Vector2> ()
+    ((x initform: 0 reader: get-x writer: set-x!)
+     (y initform: 0 reader: get-y writer: set-y!)))
 
   (define-class <GameObject> ()
     (
@@ -63,4 +55,4 @@
     (lambda (posX posY)
       (let ((v (make <Vector2> 'x posX 'y posY)))
         (make <GameObject> 'pos v))))
-;)
+)
