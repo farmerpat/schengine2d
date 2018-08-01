@@ -40,8 +40,8 @@
     (do-quit initform: #f reader: get-do-quit)
     (scenes initform: '() reader: get-scenes writer: set-scenes!)
     (window initform: '() reader: get-window)
-    (current-window-renderer initform: #f reader: get-current-window-renderer writer: set-current-window-renderer)
-    (current-scene initform: '() reader: get-current-scene writer: set-current-scene)
+    (current-window-renderer initform: #f reader: get-current-window-renderer writer: set-current-window-renderer!)
+    (current-scene initform: '() reader: get-current-scene writer: set-current-scene!)
     (verbose-logging initform: #f reader: get-verbose-logging)
   )
 )
@@ -57,30 +57,13 @@
   )
 )
 
-(define (specific-proof-of-concept-<Game>-construct-and-run)
-  (let ((g (make <Game>)))
-    (set-window-width! g 1024)
-    (set-window-height! g 768)
-    (set-title! g "_test_game_")
-    (init! g)
-    (let* ((sprite (spr:<Sprite>-constructor 200 200 64 64 "ship.png" (get-current-window-renderer g)))
-           (first-scene (make <Scene> 'name "_test_scene_" 'game-objects (list sprite))))
-      (set-current-scene g first-scene)
-      (set-scenes! g (list first-scene))
-      g)))
-
 (define-method (render-current-scene (g <Game>))
   (when (eq? (class-of (get-current-scene g)) <Scene>)
-    (display "my current scene is a <Scene>")
-    (newline)
-    (let ((wr (get-current-window-renderer g)))
-      (printf "wr is ~A~%" wr)
-      (render-game-objects (get-current-scene g) wr))))
-      ;(render-game-objects (get-current-scene g) (get-current-window-renderer g)) )))
+    (render-game-objects (get-current-scene g) (get-current-window-renderer g))))
 
 (define-method (feed-input-to-current-scene (g <Game>) event)
   (when (eq? (class-of (get-current-scene g)) <Scene>)
-    (process-event (get-current-scene g))))
+    (process-event (get-current-scene g) event)))
 
 (define-method (process-physics-for-current-scene (g <Game>))
   (when (eq? (class-of (get-current-scene g)) <Scene>)
@@ -111,7 +94,7 @@
         (get-window-width g)
         (get-window-height g)
         '(shown resizable)))
-    (set-current-window-renderer g (sdl2:create-renderer! (get-window g)))))
+    (set-current-window-renderer! g (sdl2:create-renderer! (get-window g)))))
 
 ; children should really override this...
 ; as it stands now the would want their
@@ -125,12 +108,16 @@
   (on-exit sdl2:quit!)
 
   ; does this even work when not run globally?
-  (current-exception-handler
-    (let ((original-handler (current-exception-handler)))
+  (let ((original-handler (current-exception-handler)))
+    (current-exception-handler
       (lambda (exception)
         (sdl2:quit!)
         (original-handler exception))))
   (set-window! g))
+
+(define-method (clear-screen! (g <Game>))
+  (set! (sdl2:render-draw-color (get-current-window-renderer g)) (sdl2:make-color 80 80 80))
+  (sdl2:render-fill-rect! (get-current-window-renderer g) (sdl2:make-rect 0 0 1024 768)))
 
 (define-method (run! (g <Game>))
   ; dt?
@@ -152,16 +139,17 @@
            ((escape q)
             (set-do-quit! g)))))
 
-      ;; do some work on the scene
+      (clear-screen! g)
       (feed-input-to-current-scene g e)
       (process-physics-for-current-scene g)
       (render-current-scene g)
+
+      (sdl2:render-present! (get-current-window-renderer g))
     )
   )
 
   (printf "im actually going to do real work~%")
-  (destroy! g)
-)
+  (destroy! g))
 
 (define-method (destroy! (g <Game>))
   (printf "loop through all my scenes and call destroy! on them.~%")
@@ -169,8 +157,19 @@
   (printf "which will destroy all their children.~%")
   (sdl2:destroy-window! (get-window g))
   (img:quit!)
-  (sdl2:quit!)
-)
+  (sdl2:quit!))
 
-(define g (specific-proof-of-concept-<Game>-construct-and-run ))
-(run! g)
+(define example
+  (lambda ()
+    (let ((g (make <Game>)))
+      (set-window-width! g 1024)
+      (set-window-height! g 768)
+      (set-title! g "_test_game_")
+      (init! g)
+      (let ((first-scene (make <Scene>))
+            (sprite (spr:<Sprite>-constructor 200 200 64 64 "ship.png" (get-current-window-renderer g))))
+        (set-name! first-scene "_test_game_")
+        (set-game-objects! first-scene (list sprite))
+        (set-current-scene! g first-scene)
+        (set-scenes! g (list first-scene))
+        (run! g)))))

@@ -56,3 +56,20 @@
       (let ((v (make <Vector2> 'x posX 'y posY)))
         (make <GameObject> 'pos v))))
 )
+
+; consider replacing -constructor with:
+;$<ClassName>$
+
+; and destructor would be:
+;~<ClassName>~
+; this might work if each class's shared __detroy! (or whatever) method
+; is called by ~<ClassName>~ and ClassNames's implemenation of __destroy!
+; does the real work and is defined as before: so that ParentClasse's __destroy
+; method is called if applicable.
+;
+; it would be cool if this were part of coops. i wonder if
+; i can cobble something together as is, or if going amop
+; would work. I don't even know what that is, but it seems
+; relevent somehow
+;
+; calls itself before: its parent. the only thing it does is

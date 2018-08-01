@@ -8,7 +8,6 @@
       miscmacros
       coops
       debug
-      loops
       game-object
   )
 
@@ -23,8 +22,8 @@
 
   (define-class <Scene> ()
     ((name initform: "scene" reader: get-name writer: set-name!)
-     (game-objects initform: '() reader: get-game-objects)
-     (_event-handler initform: (lambda () '()) reader: get-event-handler)))
+     (game-objects initform: '() reader: get-game-objects writer: set-game-objects!)
+     (_event-handler initform: (lambda (e) '()) reader: get-event-handler)))
 
   (define-method (set-event-handler! (s <Scene>) fn)
     (if (procedure? fn)
@@ -34,10 +33,9 @@
     ((get-event-handler s) e))
 
   (define-method (render-game-objects (s <Scene>) window-renderer)
-    (do-list elt (get-game-objects s)
-             (display "got game object")
-             (newline)
-             (render! elt window-renderer)))
+    (map (lambda (go)
+           (render! go window-renderer))
+         (get-game-objects s)))
 
   (define-method (step-physics (s <Scene>))
     ;; step my physics universe
