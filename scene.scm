@@ -9,6 +9,7 @@
       coops
       debug
       game-object
+      world
   )
 
   ;(cond-expand
@@ -18,11 +19,13 @@
     ;(else))
 
   (declare (uses game-object))
+  (declare (uses world))
   (declare (unit scene))
 
   (define-class <Scene> ()
     ((name initform: "scene" reader: get-name writer: set-name!)
      (game-objects initform: '() reader: get-game-objects writer: set-game-objects!)
+     (world initform: #f reader: get-world writer: set-world!)
      (_event-handler initform: (lambda (e) '()) reader: get-event-handler)))
 
   (define-method (set-event-handler! (s <Scene>) fn)
@@ -37,6 +40,9 @@
            (render! go window-renderer))
          (get-game-objects s)))
 
+  (define-method (init-world! (s <Scene>))
+    (set-world! s (make-world)))
+
   (define-method (step-physics (s <Scene>))
     ;; step my physics universe
     ;(step! (get-phsyics-world s))
@@ -49,4 +55,3 @@
   (define-method (add-game-object (s <Scene>) go) (+ 2 2))
 
 )
-
