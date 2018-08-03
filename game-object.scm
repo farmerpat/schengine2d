@@ -1,9 +1,66 @@
 ; csc -c -j game-object game-object.scm
+
 (module game-object *
   (import chicken scheme)
-  (use coops extras)
+  (use
+    ;coops
+    extras
+    2d-primitives
+    srfi-4
+    srfi-99)
+  ; reexport just for now until this solidfies,
+  ; as it fascilitates poking and prodding...
+  (reexport srfi-99)
 
   (declare (unit game-object))
+
+  (define-record-property pos)
+  (define-record-property pos!)
+  ; body could be a record that is a wrapper around
+  ; a chipmunk body
+  (define-record-property body)
+  (define-record-property body!)
+  (define-record-property render!)
+  (define-record-property destroy!)
+
+  (define GAME_OBJECT
+    (make-rtd
+      'game-object
+      '#((mutable pos) (mutable body))
+
+      #:property pos 'pos
+      #:property pos!
+      (lambda (rt)
+        (lambda (new-pos)
+          (if (number-vector? new-pos)
+              (if (f32vector? new-pos)
+                  (set! (pos rt) new-pos)))))
+
+      #:property body 'body
+      #:property body!
+      (lambda (rt)
+        (lambda (new-body)
+          (set! (body rt) new-body)))
+
+      #:property render!
+      (lambda (rt)
+        (lambda ()
+          (display "i am game-object's render!")
+          (newline)))
+
+      #:property destroy!
+      (lambda (rt)
+        (lambda ()
+          (display "im the destroyer of GAME_OBJECTs")
+          (newline)))))
+
+  (define make-game-object
+    (lambda ()
+      ((rtd-constructor GAME_OBJECT) (vect:create 0 0) #f)))
+
+  )
+
+#|
 
   (define-class <Vector2> ()
     ((x initform: 0 reader: get-x writer: set-x!)
@@ -55,7 +112,6 @@
     (lambda (posX posY)
       (let ((v (make <Vector2> 'x posX 'y posY)))
         (make <GameObject> 'pos v))))
-)
 
 ; consider replacing -constructor with:
 ;$<ClassName>$
@@ -73,3 +129,4 @@
 ; relevent somehow
 ;
 ; calls itself before: its parent. the only thing it does is
+|#

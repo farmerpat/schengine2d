@@ -74,14 +74,7 @@
     (lambda (#!optional (auto-init #t))
       (let ((w ((rtd-constructor WORLD) #f 1/60 (vect:create 0 -9.8))))
         (if auto-init ((init! w)))
-        w)))
-
-  (define world? (rtd-predicate WORLD))
-  (define world-space (rtd-accessor WORLD 'space))
-  (define world-step-time (rtd-accessor WORLD 'step-time))
-  (define world-gravity (rtd-accessor WORLD 'gravity))
-
-)
+        w))))
 
 ;(define-class <World> ()
   ;((space initform: #f reader: get-space writer: set-space!)

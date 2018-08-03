@@ -7,14 +7,109 @@
     (prefix sdl2-image img:)
     extras
     miscmacros
-    coops
     debug
+    srfi-4
+    srfi-99
     game-object
+    2d-primitives
   )
+
+  (reexport srfi-99)
 
   (declare (uses game-object))
   (declare (unit sprite))
 
+  (define-record-property image-file-name)
+  (define-record-property image-file-name!)
+  (define-record-property surface)
+  (define-record-property surface!)
+  (define-record-property texture)
+  (define-record-property texture!)
+  (define-record-property texture-origin)
+  (define-record-property texture-origin!)
+  (define-record-property texture-width)
+  (define-record-property texture-width!)
+  (define-record-property texture-height)
+  (define-record-property texture-height!)
+
+  (define SPRITE
+    (make-rtd
+      'sprite
+      '#((mutable image-file-name)
+	 (mutable surface)
+	 (mutable texture)
+	 (mutable texture-origin)
+	 (mutable texture-width)
+	 (mutable texture-height))
+
+      #:property image-file-name 'image-file-name
+      #:property image-file-name!
+      (lambda (rt)
+        (lambda (new-image-file-name)
+	  ; validate this
+          (set! (image-file-name rt) new-image-file-name)))
+
+      #:property surface 'surface
+      #:property surface!
+      (lambda (rt)
+        (lambda (new-surface)
+	  ; validate this
+          (set! (surface rt) new-surface)))
+
+      #:property texture 'texture
+      #:property texture!
+      (lambda (rt)
+	(lambda (new-texture)
+	  (set! (texture rt) new-texture)))
+
+      #:property texture-origin 'texture-origin
+      #:property texture-origin!
+      (lambda (rt)
+	(lambda (new-texture-origin)
+	  (set! (texture-origin rt) new-texture-origin)))
+
+      #:property texture-width 'texture-width
+      #:property texture-width!
+      (lambda (rt)
+	(lambda (new-texture-width)
+	  (set! (texture-width rt) new-texture-width)))
+
+      #:property texture-height 'texture-height
+      #:property texture-height!
+      (lambda (rt)
+	(lambda (new-texture-height)
+	  (set! (texture-height rt) new-texture-height)))
+
+      #:property render!
+      (lambda (rt)
+	(lambda (renderer)
+	  (let ((source-rect (sdl2:make-rect (vect:x (texture-origin rt))
+					     (vect:y (texture-origin rt))
+					     (texture-width rt)
+					     (texture-height rt)))
+		(dest-rect (sdl2:make-rect (vect:x (pos rt))
+					   (vect:y (pos rt))
+					   (texture-width rt)
+					   (texture-height rt))))
+	    (sdl2:render-copy! renderer (texture s) source-rect dest-rect))))
+
+      #:property destroy!
+      (lambda (rt)
+        (lambda ()
+          (display "im the destroyer of SPRITEs")
+          (newline)))))
+
+  (define make-sprite
+    (lambda ()
+      ((rtd-constructor SPRITE) "" #f #f (vect:create 0 0) 0 0)))
+
+  (define make-sprite
+    (lambda (image-file-name texture-width texture-height)
+      ; afterwards, how about initializing the texture/surface?
+      ((rtd-constructor SPRITE) image-file-name #f #f (vect:create 0 0) texture-width texture-height)))
+  )
+
+#|
   (define-class <Sprite> (<GameObject>)
     (
       (img-file-name initform: "" reader: get-img-file-name writer: set-img-file-name!)
@@ -90,4 +185,4 @@
       (sdl2:destroy-texture! (get-texture s))
     )
   )
-)
+|#

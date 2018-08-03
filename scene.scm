@@ -9,8 +9,7 @@
       coops
       debug
       game-object
-      world
-  )
+      world)
 
   ;(cond-expand
     ;((not compiling)
