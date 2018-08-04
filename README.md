@@ -26,8 +26,33 @@ either way, I forked all these repos...so use:
 clone my repos and run chicken-install -s from inside each of them in the order in which they
 appear in the lists above.
 
-Building
-=========
+Build Environment
+=================
+- https://github.com/nickg/swank-chicken
+- Install dependencies
+```shell
+$ export SDL2_FLAGS=`sdl2-config --cflags --libs`
+$ # because https://gitlab.com/chicken-sdl2/chicken-sdl2/issues/43 ...
+$  SDL2_FLAGS="$SDL2_FLAGS -w"
+$ chicken-install -s sdl2
+$ chicken-install -s sdl2-image
+$ chicken-install -s apropos
+$ chicken-install -s debug
+$ chicken-install -s srfi-99
+```
+
+- Set up chicken-doc
+```shell
+$ # write me
+```
+
+- Fix Vim
+See my [dotfiles](https://github.com/farmerpat/dotfiles)
+for a vimrc that's at least for this purpose and
+a modified scheme.vim syntax file that has added
+syntax hightlighting for a number of chicken-specic/project-specific
+symbols
+
 If you run make, and then launch csi from the same directory, it can see the .import.scm files
 that the build generated. So for example, you could
 
