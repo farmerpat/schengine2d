@@ -40,6 +40,7 @@
   (define-record-property render-game-objects!)
   (define-record-property init-world!)
   (define-record-property step-physics)
+  (define-record-property destroy-game-objects!)
 
   (define SCENE
     (make-rtd
@@ -74,7 +75,7 @@
       (lambda (rt)
         (lambda (event)
           (map (lambda (go)
-                 (receive-event! go event))
+                 ((receive-event! go) event))
                (game-objects rt))))
 
       #:property render-game-objects!
@@ -116,7 +117,17 @@
       (lambda (rt)
         (lambda (new-event-handler)
           (if (procedure? new-event-handler)
-              (set! (event-handler rt) new-event-handler))))))
+              (set! (event-handler rt) new-event-handler))))
+
+      #:property destroy-game-objects!
+      (lambda (rt)
+        (lambda ()
+          ; this is the same paradigm as render-game-objects!
+          ; e.g. it could be abstracted away
+          (map (lambda (go)
+                 ((destroy! go)))
+               (game-objects rt))))
+      ))
 
   (define (scene? rt)
     ((rtd-predicate SCENE) rt))

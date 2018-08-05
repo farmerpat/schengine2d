@@ -1,5 +1,7 @@
 ; csc -c -j sprite sprite.scm
 
+; TDOO: init body record that can
+; be static or dynamic and will contain chipmunk properties
 (module sprite *
   (import chicken scheme)
   (use
@@ -10,13 +12,11 @@
     debug
     srfi-4
     srfi-99
-    game-object
     2d-primitives
   )
 
   (reexport srfi-99)
 
-  (declare (uses game-object))
   (declare (unit sprite))
 
   (define-record-property image-file-name)
@@ -31,6 +31,8 @@
   (define-record-property texture-width!)
   (define-record-property texture-height)
   (define-record-property texture-height!)
+  (define-record-property render-texture!)
+  (define-record-property destroy-resources!)
 
   (define SPRITE
     (make-rtd
@@ -42,7 +44,6 @@
          (mutable texture-width)
          (mutable texture-height))
 
-      #:parent GAME_OBJECT
       #:property image-file-name 'image-file-name
       #:property image-file-name!
       (lambda (rt)
@@ -81,37 +82,28 @@
         (lambda (new-texture-height)
           (set! (texture-height rt) new-texture-height)))
 
-      ; does sprite have to implement this since
-      ; its defined as a record property?
-      ; test to find out!
-      ; it turns out that it doesn't have to implement it
-      ; what if its children what to use it?
-      #:property receive-event!
+      #:property render-texture!
       (lambda (rt)
-        (lambda (event)
-          '()))
-
-      #:property render!
-      (lambda (rt)
-        (lambda (window-renderer)
+        ; check the types of these
+        (lambda (pos window-renderer)
           (let ((source-rect (sdl2:make-rect (vect:x (texture-origin rt))
                                              (vect:y (texture-origin rt))
                                              (texture-width rt)
                                              (texture-height rt)))
-                (dest-rect (sdl2:make-rect (vect:x (pos rt))
-                                           (vect:y (pos rt))
+                (dest-rect (sdl2:make-rect (vect:x pos)
+                                           (vect:y pos)
                                            (texture-width rt)
                                            (texture-height rt))))
             (sdl2:render-copy! window-renderer (texture rt) source-rect dest-rect))))
 
-      #:property destroy!
+      #:property destroy-resources!
       (lambda (rt)
         (lambda ()
+          ; TODO:
+          ; actually destroy the surface and
+          ; texture if they exist
           (display "im the destroyer of SPRITEs")
-          (newline)
-          ; how call parent?
-          ; seems like we can't
-          ))))
+          (newline)))))
 
   (define (sprite? rt)
     ((rtd-predicate SPRITE) rt))
@@ -124,12 +116,6 @@
   (define make-sprite-nil-args
     (lambda ()
       ((rtd-constructor SPRITE)
-       ; game-object's:
-       ; pos
-       (vect:create 0 0)
-       ; body
-       #f
-       ; sprite's
        ; image-file-name
        ""
        ; surface
@@ -143,12 +129,10 @@
        ; texture-height
        0)))
 
-  ; ! b/c we are setting texture and surface even though they aren't passed in
   (define make-sprite-quadruple-args
     (lambda (image-file-name texture-width texture-height window-renderer)
       ; afterwards, how about initializing the texture/surface?
       (let ((sprite ((rtd-constructor SPRITE)
-                     (vect:create 0 0) #f
                      image-file-name #f #f (vect:create 0 0)
                      texture-width texture-height)))
         ((surface! sprite)

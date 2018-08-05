@@ -3,6 +3,7 @@
 ;(declare (uses scene))
 ;(declare (unit game))
 
+;; TODO: start processing game object children
 ; if we run csi from the same directory our .import.scm files are located
 ; for our project's modules, this will work as expected with ,l game.scm
 (use
@@ -41,7 +42,7 @@
 (define-record-property clear-screen!)
 (define-record-property run!)
 ; this name is clobbering other names, and that needs to be dealt with
-(define-record-property destroy!)
+(define-record-property shutdown-sdl!)
 (define-record-property render-current-scene)
 (define-record-property feed-input-to-current-scene)
 (define-record-property process-physics-for-current-scene)
@@ -205,10 +206,11 @@
           ((render-current-scene rt))
           (sdl2:render-present! (current-window-renderer rt))))
 
-        (printf "im actually going to do real work~%")
-        ((destroy! rt))))
+        ; TODO: destroy all the scenes instead...
+        ((destroy-game-objects! (current-scene rt)))
+        ((shutdown-sdl! rt))))
 
-    #:property destroy!
+    #:property shutdown-sdl!
     (lambda (rt)
       (lambda ()
         (sdl2:destroy-window! (window rt))
@@ -228,12 +230,13 @@
     (let ((g (make-game)))
       ((title! g) "example_title")
       ((init! g))
-      (let ((first-scene (make-scene))
+      (let ((go (make-game-object (vect:create 300 300)))
+            (first-scene (make-scene))
             (sprite (spr:make-sprite "ship.png" 64 64 (current-window-renderer g))))
 
-        ((pos! sprite) (vect:create 300 300))
+        ((sprite! go) sprite)
         ((name! first-scene) "_test_game_")
-        ((game-objects! first-scene) (list sprite))
+        ((game-objects! first-scene) (list go))
         (set! (current-scene g) first-scene)
         ((scenes! g) (list first-scene))
         ((init-world! first-scene))
