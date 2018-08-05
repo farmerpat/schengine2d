@@ -52,6 +52,8 @@
       #:property receive-event!
       (lambda (rt)
         (lambda (event)
+          (display "im game-object's receive-event!")
+          (newline)
           '()))
 
       #:property destroy!

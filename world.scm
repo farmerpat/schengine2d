@@ -1,10 +1,12 @@
 ; csc -c -j world world.scm
+;; <World> has to be responsible for setting that
+;; "you're out of scope" ballback
+;; that calls space-free
 
 (module world *
   (import chicken scheme)
   (use
       miscmacros
-      coops
       debug
       physics
       srfi-4
@@ -18,6 +20,7 @@
 
   (define-record-property space)
   (define-record-property space!)
+  (define-record-property step)
   (define-record-property step-time)
   (define-record-property step-time!)
   (define-record-property gravity)
@@ -35,6 +38,11 @@
       (lambda (rt)
         (lambda (new-space)
           (set! (space rt) new-space)))
+
+      #:property step
+      (lambda (rt)
+        (lambda ()
+          (space-step (space rt) (step-time rt))))
 
       #:property step-time 'step-time
       #:property step-time!
@@ -66,6 +74,9 @@
     )
   )
 
+  (define (world? rt)
+    ((rtd-predicate WORLD) rt))
+
   ; if we let ((w (rtd-constructor WORLD))),
   ; might be able to make destrctor go on
   ; "out of scope" callback for newly minted
@@ -75,26 +86,3 @@
       (let ((w ((rtd-constructor WORLD) #f 1/60 (vect:create 0 -9.8))))
         (if auto-init ((init! w)))
         w))))
-
-;(define-class <World> ()
-  ;((space initform: #f reader: get-space writer: set-space!)
-   ;(step-time initform: 1/60 reader: get-step-time writer: set-step-time!)
-   ;(gravity initform: (vect:create 0 -9.8) reader: get-gravity writer: set-gravity!)))
-
-;; <World> has to be responsible for setting that
-;; "you're out of scope" ballback
-;; that calls space-free
-;(define-method (init! (w <World>))
-  ;(set-space! w (create-space))
-  ;(if (number-vector? (get-gravity w))
-    ;(if (f32vector? (get-gravity w))
-      ;(set! (space-gravity (get-space w)) (get-gravity w)))))
-
-;(define-method (step! (w <World>))
-  ;(space-step (get-space w) (get-step-time w)))
-
-;(define (<World>-constructor #!optional (auto-init #t))
-  ;(let ((w (make <World>)))
-    ;(if auto-init
-      ;(init! w))
-    ;w))
