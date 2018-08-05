@@ -55,14 +55,15 @@
       #:property surface!
       (lambda (rt)
         (lambda (new-surface)
-          ; validate this
-          (set! (surface rt) new-surface)))
+          (if (sdl2:surface? new-surface)
+              (set! (surface rt) new-surface))))
 
       #:property texture 'texture
       #:property texture!
       (lambda (rt)
         (lambda (new-texture)
-          (set! (texture rt) new-texture)))
+          (if (sdl2:texture? new-texture)
+              (set! (texture rt) new-texture))))
 
       #:property texture-origin 'texture-origin
       #:property texture-origin!
@@ -99,11 +100,14 @@
       #:property destroy-resources!
       (lambda (rt)
         (lambda ()
-          ; TODO:
-          ; actually destroy the surface and
-          ; texture if they exist
           (display "im the destroyer of SPRITEs")
-          (newline)))))
+          (newline)
+
+          (when (sdl2:texture? (texture rt))
+            (sdl2:destroy-texture! (texture rt)))
+
+          (when (sdl2:surface? (surface rt))
+            (sdl2:free-surface! (surface rt)))))))
 
   (define (sprite? rt)
     ((rtd-predicate SPRITE) rt))
@@ -131,7 +135,6 @@
 
   (define make-sprite-quadruple-args
     (lambda (image-file-name texture-width texture-height window-renderer)
-      ; afterwards, how about initializing the texture/surface?
       (let ((sprite ((rtd-constructor SPRITE)
                      image-file-name #f #f (vect:create 0 0)
                      texture-width texture-height)))
