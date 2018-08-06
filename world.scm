@@ -26,7 +26,7 @@
   (define-record-property gravity)
   (define-record-property gravity!)
   (define-record-property init!)
-  (define-record-property destructor)
+  (define-record-property destroy-world!)
 
   ;; add some validation to setters...
   (define WORLD
@@ -65,7 +65,7 @@
               (if (f32vector? (gravity rt))
                 (set! (space-gravity (space rt)) (gravity rt)))))))
 
-      #:property destructor
+      #:property destroy-world!
       (lambda (rt)
         (lambda ()
         (display "im the destroyer of WORLDs")
