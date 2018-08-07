@@ -96,6 +96,15 @@
         (lambda (new-shape)
           ; if its a shape
           ; push it
+          ;; ...seriously..do it
+          ;; this might not make any sense at all...
+          ;; we create shapes by adding them to a body.
+          ;; those calls return the created shapes as
+          ;; the result. i chould just stick those
+          ;; in here...
+          ;; i think chipmunk provides iterators to get the
+          ;; shapes, etc of a body. so this might not
+          ;; be necessary at all.
           '()))
 
       #:property cp-fixtures 'cp-fixtures
@@ -120,19 +129,20 @@
       #:property init-body!
       (lambda (rt)
         (lambda ()
-          (display "i r init-body!")
-          (newline)
+          ; why did I even put this in a let?
           (let ((b #f))
            (cond ((equal? (type rt) 'static)
                   (set! b (space-static-body (space (parent-world rt)))))
                  ((equal? (type rt) 'dynamic)
                   (set! b (create-body (cp-body-mass rt) (cp-body-moment rt)))))
-           (set! (cp-body rt) b)
+
+           ((cp-body! rt) b)
+
            (when (body-rogue? (cp-body rt))
-             (space-add-body (space (parent-world rt)) (cp-body rt)))
-           ;; loop through the shapes and add them to the body
-           ;; loop through the fixtures and add them to the body
-           )))
+             ;; do we have to add it when its static?
+             ;; aren't we just adding a shape to the space's static body
+             ;; or something?
+             (space-add-body (space (parent-world rt)) (cp-body rt))))))
     )
   )
 
@@ -177,6 +187,9 @@ e.g. dynamic, kinematic, and static
 or the lib in the chicken egg is too old
 
 for now just have type prop be either 'static or 'dynamic
+
+for instance, we might have a descendant of body called
+box-shaped-body...
 
 example usage:
 
