@@ -41,8 +41,9 @@
 
       #:property step
       (lambda (rt)
-        (lambda ()
-          (space-step (space rt) (step-time rt))))
+        (lambda (dt)
+          (space-step (space rt) dt)))
+          ;(space-step (space rt) (step-time rt))))
 
       #:property step-time 'step-time
       #:property step-time!

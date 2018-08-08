@@ -6,12 +6,15 @@
     extras
     2d-primitives
     sprite
+    body
+    chipmunk
     srfi-4
     srfi-99)
   ; reexport just for now until this solidfies,
   ; as it fascilitates poking and prodding...
   (reexport srfi-99)
 
+  (declare (uses sprite body))
   (declare (unit game-object))
 
   (define-record-property pos)
@@ -28,6 +31,7 @@
   (define-record-property sprite)
   (define-record-property sprite!)
   (define-record-property render!)
+  (define-record-property sync-pos-to-body!)
   (define-record-property receive-event!)
   (define-record-property destroy!)
 
@@ -62,6 +66,41 @@
         (lambda (window-renderer)
           (when (sprite? (sprite rt))
             ((render-texture! (sprite rt)) (pos rt) window-renderer))))
+
+      ; if body-x > 0, go-x == half_screen_width + go-x
+      ; if body-x < 0, go-x == half_screen_width - abs(go-x)
+      ; if body-y > 0, go-y == half_screen_height - y
+      ; if body-y < 0, go-y == half-screen-height + abs(go-y)
+      ; TODO: simplify this
+      #:property sync-pos-to-body!
+      (lambda (rt)
+        (lambda ()
+          (when (body? (body rt))
+            ; scale should be in a game manager?
+            (let* ((body-pos (body-position (cp-body (body rt))))
+                   (pos-x (* 100 (vect:x body-pos)))
+                   (pos-y (* 100 (vect:y body-pos)))
+                   (half-screen-width 512)
+                   (half-screen-height 384)
+                   (new-x 512)  ; new-x,new-y initialized for 0 case
+                   (new-y 384))
+
+              (cond ((positive? pos-x)
+                     (set! new-x (+ half-screen-width pos-x)))
+                    ((negative? pos-x)
+                     (set! new-x (- half-screen-width (abs pos-x)))))
+              (cond ((positive? pos-y)
+                     (set! new-y (- half-screen-width pos-y)))
+                    ((negative? pos-y)
+                     (set! new-y (+ half-screen-width (abs pos-y)))))
+
+              ;(printf "pos-x: ~A, new-x: ~A~%" pos-x new-x)
+              ;(printf "pos-y: ~A, new-y: ~A~%" pos-y new-y)
+
+              ((pos! rt)
+               (vect:create
+                 (inexact->exact (round new-x))
+                 (inexact->exact (round new-y))))))))
 
       #:property receive-event!
       (lambda (rt)

@@ -18,6 +18,8 @@
   sprite
   scene
   2d-primitives
+  world
+  boxed-dynamic-body
 )
 
 (define-record-property window-width)
@@ -38,7 +40,7 @@
 (define-record-property set-do-quit!)
 (define-record-property clear-do-quit!)
 (define-record-property init-window!)
-(define-record-property init!)
+(define-record-property game-init!)
 (define-record-property clear-screen!)
 (define-record-property run!)
 ; this name is clobbering other names, and that needs to be dealt with
@@ -46,6 +48,14 @@
 (define-record-property render-current-scene)
 (define-record-property feed-input-to-current-scene)
 (define-record-property process-physics-for-current-scene)
+
+(define *old-ticks* (make-parameter 0))
+
+(define (tick!)
+  (let* ((new-ticks (sdl2:get-ticks))
+         (dt (/ (- new-ticks (*old-ticks*)) 1000)))
+    (*old-ticks* new-ticks)
+    dt))
 
 (define GAME
   (make-rtd
@@ -133,9 +143,10 @@
 
     #:property process-physics-for-current-scene
     (lambda (rt)
-      (lambda ()
-        (if (scene? (current-scene rt))
-            (step-physics (current-scene rt)))))
+      (lambda (dt)
+        (when (scene? (current-scene rt))
+          ((step-physics (current-scene rt)) dt)
+          ((update-game-object-bodies! (current-scene rt))))))
 
     #:property init-window!
     (lambda (rt)
@@ -150,8 +161,10 @@
             (window-height rt)
             '(shown resizable)))
         (set! (current-window-renderer rt) (sdl2:create-renderer! (window rt)))))
+        ;(set! (current-window-renderer rt) (sdl2:create-renderer! (window rt) -1 '(present-vsync)))))
+              ;(sdl2:create-renderer! (window rt) -1 '(present-vsync))
 
-    #:property init!
+    #:property game-init!
     (lambda (rt)
       (lambda ()
         (sdl2:set-main-ready!)
@@ -185,29 +198,34 @@
     #:property run!
     (lambda (rt)
       (lambda ()
-        ; dt?
+        (*old-ticks* (sdl2:get-ticks))
+
         (while (not (do-quit rt))
-         (let ((e (sdl2:wait-event!)))
-          (when (verbose-logging rt)
-            (print e))
-          (case (sdl2:event-type e)
-            ((window)
-             ((render-current-scene rt)))
-            ((quit)
-             ((set-do-quit! rt)))
-            ((key-down)
-             (case (sdl2:keyboard-event-sym e)
-               ((escape q)
-                ((set-do-quit! rt))))))
+         (let (;(e (sdl2:wait-event!))
+               ; maybe this should be after event processing?
+               (dt (tick!)))
+
+           (sdl2:pump-events!)
+           (while (sdl2:has-events?)
+             (let ((e (sdl2:poll-event!)))
+              (case (sdl2:event-type e)
+                ((window)
+                ((render-current-scene rt)))
+                ((quit)
+                 ((set-do-quit! rt)))
+                ((key-down)
+                 (case (sdl2:keyboard-event-sym e)
+                   ((escape q)
+                    ((set-do-quit! rt))))))
+              ;; this seems like the place for this...make sure
+              ((feed-input-to-current-scene rt) e)
+              (when (verbose-logging rt)
+                (print e))))
 
           ((clear-screen! rt))
-          ((feed-input-to-current-scene rt) e)
-          ((process-physics-for-current-scene rt))
+          ((process-physics-for-current-scene rt) dt)
           ((render-current-scene rt))
           (sdl2:render-present! (current-window-renderer rt))))
-
-        ; TODO: destroy all the scenes instead...
-        ((destroy-game-objects! (current-scene rt)))
         ((shutdown-sdl! rt))))
 
     #:property shutdown-sdl!
@@ -228,17 +246,33 @@
 (define example
   (lambda ()
     (let ((g (make-game)))
-      ((title! g) "example_title")
-      ((init! g))
-      (let ((go (make-game-object (vect:create 300 300)))
-            (first-scene (make-scene))
-            (sprite (spr:make-sprite "ship.png" 64 64 (current-window-renderer g))))
+     (printf "did make things~%")
+     ((title! g) "example_title")
+     ((game-init! g))
+     (let* ((world (make-world))
+            (go (make-game-object (vect:create 300 300)))
+            (first-scene (make-scene "_test_scene_name_" '() world))
+            (sprite (spr:make-sprite "ship.png" 64 64 (current-window-renderer g)))
+            (body (make-boxed-dynamic-body world 64 64 1)))
 
-        ((sprite! go) sprite)
-        ((name! first-scene) "_test_game_")
-        ((game-objects! first-scene) (list go))
-        (set! (current-scene g) first-scene)
-        ((scenes! g) (list first-scene))
-        ((init-world! first-scene))
-        (printf "current world: ~A~%" (world (current-scene g)))
-        ((run! g))))))
+       (printf "in body of example's let~%")
+
+       ; wouldn't it be really nice if we didn't have
+       ; to make all this stuff ourselves?
+       ; and it would be nice to not depend on scene for the world.
+       ; we can either add a procedural property to game-object
+       ; that gets passed a world and can then do things with it,
+       ; but holding off initialization that long seems bad.
+       ; i think its okay for there to be a world in the game
+       ; scope that it passes to scenes...
+
+       ((sprite! go) sprite)
+       ((body! go) body)
+
+       ((game-objects! first-scene) (list go))
+       (set! (current-scene g) first-scene)
+       ((scenes! g) (list first-scene))
+       (printf "bout to run~%")
+       ((run! g))))))
+
+(example)

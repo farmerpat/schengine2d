@@ -38,6 +38,7 @@
   (define-record-property event-handler!)
   (define-record-property pass-event-to-game-objects!)
   (define-record-property render-game-objects!)
+  (define-record-property update-game-object-bodies!)
   (define-record-property init-world!)
   (define-record-property step-physics)
   (define-record-property destroy-game-objects!)
@@ -92,9 +93,21 @@
 
       #:property step-physics
       (lambda (rt)
-        (lambda ()
+        (lambda (dt)
+          ; chipmunk recommends using a fixed dt...
+          ; can try that now that we are flushing events
+          ; instead of waiting for them, and/or
+          ; can try making current-window-renderer with
+          ; '(present-vsync) flag
           (if (world? (world rt))
-              ((step (world rt))))))
+              ((step (world rt)) dt))))
+
+      #:property update-game-object-bodies!
+      (lambda (rt)
+        (lambda ()
+          (map (lambda (go)
+                 ((sync-pos-to-body! go)))
+               (game-objects rt))))
 
       #:property add-game-object!
       (lambda (rt)

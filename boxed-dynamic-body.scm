@@ -59,6 +59,9 @@
   (define (boxed-dynamic-body? rt)
     ((rtd-predicate BOXED_DYNAMIC_BODY) rt))
 
+  ; none of these are setting the position based
+  ; on the position of the game-object parent...
+  ; we should be setting pos somewhere
   (define make-boxed-dynamic-body
     (case-lambda
       ((world width height)
