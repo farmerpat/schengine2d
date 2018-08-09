@@ -61,12 +61,14 @@
       #:property cp-body 'cp-body
       #:property cp-body!
       (lambda (rt)
-        (lambda (new-cp-body)
+        (lambda (new-cp-body #!optional (pos #f))
           ; TODO:
           ; really need to tag these or something
           ; or figure out the appropriate predicate...
           (if (pointer? new-cp-body)
-              (set! (cp-body rt) new-cp-body))))
+              (set! (cp-body rt) new-cp-body)
+              (if pos
+                  (set! (body-position (cp-body rt)) pos)))))
 
       #:property cp-body-mass 'cp-body-mass
       #:property cp-body-mass!
@@ -138,7 +140,7 @@
 
            ((cp-body! rt) b)
 
-           (when (body-rogue? (cp-body rt))
+           (when (and (body-rogue? (cp-body rt)) (equal? (type rt) 'dynamic))
              ;; do we have to add it when its static?
              ;; aren't we just adding a shape to the space's static body
              ;; or something?

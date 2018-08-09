@@ -91,8 +91,13 @@
                                              (vect:y (texture-origin rt))
                                              (texture-width rt)
                                              (texture-height rt)))
-                (dest-rect (sdl2:make-rect (vect:x pos)
-                                           (vect:y pos)
+                ;; offset so that when rendered, the center
+                ;; of the texture appears at the game object
+                ;; coordinates
+                ;; ...this could be made optional or even
+                ;; extended to the point of sfml's setOrigin
+                (dest-rect (sdl2:make-rect (- (vect:x pos) (/ (texture-width rt) 2.0))
+                                           (- (vect:y pos) (/ (texture-height rt) 2.0))
                                            (texture-width rt)
                                            (texture-height rt))))
             (sdl2:render-copy! window-renderer (texture rt) source-rect dest-rect))))
@@ -142,4 +147,7 @@
          (img:load image-file-name))
         ((texture! sprite)
          (sdl2:create-texture-from-surface* window-renderer (surface sprite)))
+        ; since we have texture-width/height,
+        ; we can set the origin to the center
+
        sprite))))

@@ -7,6 +7,7 @@
     2d-primitives
     sprite
     body
+    schengine-util
     chipmunk
     srfi-4
     srfi-99)
@@ -14,11 +15,10 @@
   ; as it fascilitates poking and prodding...
   (reexport srfi-99)
 
-  (declare (uses sprite body))
+  (declare (uses schengine-util sprite body))
   (declare (unit game-object))
 
   (define-record-property pos)
-
   (define-record-property pos!)
   ;(define-record-property children)
   ;(define-record-property add-child!)
@@ -51,8 +51,11 @@
       #:property body 'body
       #:property body!
       (lambda (rt)
-        (lambda (new-body)
-          (set! (body rt) new-body)))
+        (lambda (new-body #!optional (set-position #f))
+          (set! (body rt) new-body)
+          (if set-position
+              (let ((new-body-pos (screen-pos->chipmunk-pos (pos rt))))
+               (set! (body-position (cp-body (body rt))) new-body-pos)))))
 
       #:property sprite 'sprite
       #:property sprite!
@@ -78,8 +81,10 @@
           (when (body? (body rt))
             ; scale should be in a game manager?
             (let* ((body-pos (body-position (cp-body (body rt))))
-                   (pos-x (* 100 (vect:x body-pos)))
-                   (pos-y (* 100 (vect:y body-pos)))
+                   ;(pos-x (* 100 (vect:x body-pos)))
+                   ;(pos-y (* 100 (vect:y body-pos)))
+                   (pos-x (* (*chipmunk->screen-factor*) (vect:x body-pos)))
+                   (pos-y (* (*chipmunk->screen-factor*) (vect:y body-pos)))
                    (half-screen-width 512)
                    (half-screen-height 384)
                    (new-x 512)  ; new-x,new-y initialized for 0 case

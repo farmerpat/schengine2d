@@ -27,6 +27,7 @@
   (define-record-property gravity!)
   (define-record-property init!)
   (define-record-property destroy-world!)
+  (define-record-property add-collision-handler!)
 
   ;; add some validation to setters...
   (define WORLD
@@ -71,6 +72,12 @@
         (lambda ()
         (display "im the destroyer of WORLDs")
         (newline)))
+
+      #:property add-collision-handler!
+      (lambda (rt)
+        (lambda (ch)
+          (if (procedure? ch)
+              (set! (space-on-collision-begin (space rt)) ch))))
 
     )
   )

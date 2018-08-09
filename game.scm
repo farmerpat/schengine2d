@@ -20,6 +20,9 @@
   2d-primitives
   world
   boxed-dynamic-body
+  schengine-util
+  ;chipmunk
+  physics
 )
 
 (define-record-property window-width)
@@ -223,7 +226,10 @@
                 (print e))))
 
           ((clear-screen! rt))
-          ((process-physics-for-current-scene rt) dt)
+          ; we can control overall speed by
+          ; setting dt
+          ;((process-physics-for-current-scene rt) dt)
+          ((process-physics-for-current-scene rt) 0.00005)
           ((render-current-scene rt))
           (sdl2:render-present! (current-window-renderer rt))))
         ((shutdown-sdl! rt))))
@@ -249,30 +255,84 @@
      (printf "did make things~%")
      ((title! g) "example_title")
      ((game-init! g))
+
      (let* ((world (make-world))
-            (go (make-game-object (vect:create 300 300)))
+            (ship (make-game-object (vect:create 512 300)))
+            (ship2 (make-game-object (vect:create 512 100)))
             (first-scene (make-scene "_test_scene_name_" '() world))
             (sprite (spr:make-sprite "ship.png" 64 64 (current-window-renderer g)))
-            (body (make-boxed-dynamic-body world 64 64 1)))
+            (sprite2 (spr:make-sprite "ship.png" 64 64 (current-window-renderer g)))
+            (ship-body (make-boxed-dynamic-body world 64 64 1))
+            (ship-body2 (make-boxed-dynamic-body world 64 64 10))
+            (ground (create-segment-shape
+                      (space-static-body (space world))
+                      (screen-pos->chipmunk-pos (vect:create 0.0 760.0))
+                      (screen-pos->chipmunk-pos (vect:create 1024.0 760.0))
+                      1.0))) ;;; thought the formerly 0 "radius" was throwing it..nah
 
-       (printf "in body of example's let~%")
+       (printf "converted p1: ~A~%" (screen-pos->chipmunk-pos (vect:create 0.0 760.0)))
+       (printf "converted p2: ~A~%" (screen-pos->chipmunk-pos (vect:create 1024.0 760.0)))
+       ; why not have #:property add-shape on world?
+       ; don't wat to duplicate work, but still...
+       (space-add-shape (space world) ground)
+       (set! (shape-friction ground) 1.0)
 
-       ; wouldn't it be really nice if we didn't have
-       ; to make all this stuff ourselves?
-       ; and it would be nice to not depend on scene for the world.
-       ; we can either add a procedural property to game-object
-       ; that gets passed a world and can then do things with it,
-       ; but holding off initialization that long seems bad.
-       ; i think its okay for there to be a world in the game
-       ; scope that it passes to scenes...
+       (set! (shape-friction (box-shape ship-body)) 0.3)
+       (set! (shape-friction (box-shape ship-body2)) 0.5)
 
-       ((sprite! go) sprite)
-       ((body! go) body)
+       ;(dump-shape ground "ground")
+       ;(dump-body (cp-body ship-body) "ship-body")
+       ;(dump-shape (box-shape ship-body) "ship-body-shape")
 
-       ((game-objects! first-scene) (list go))
+       ((sprite! ship) sprite)
+       ((sprite! ship2) sprite2)
+
+       ((body! ship) ship-body #t)
+       ((body! ship2) ship-body2 #t)
+
+       ((game-objects! first-scene) (list ship ship2))
        (set! (current-scene g) first-scene)
        ((scenes! g) (list first-scene))
-       (printf "bout to run~%")
+
+       ;; lets try a collision handler...
+       ((add-collision-handler! world) (lambda (args) (display "fyf")(newline)))
        ((run! g))))))
+
+(define (dump-body b title)
+  (printf "~%")
+  (printf "Dumping Body ~A~%" title)
+  (printf "body ~A~%" b)
+  (printf "body-mass: ~A~%" (body-mass b))
+  (printf "body-moment ~A~%" (body-moment b))
+  (printf "body-velocity ~A~%" (body-velocity b))
+  (printf "body-force ~A~%" (body-force b))
+  (printf "body-angle: ~A~%" (body-angle b))
+  ; broken in chicken-chipmunk.. references cpBodyGetAngleVel
+  ; instead of cpBodyGetAngularVelocity
+  ; TODO: fix it.
+  ;(printf "body-angle-velocity: ~A~%" (body-angle-velocity b))
+  (printf "body-torque: ~A~%" (body-torque b))
+  (printf "body-rotation: ~A~%" (body-rotation b))
+  (printf "body-velocity-limit: ~A~%" (body-velocity-limit b))
+  (printf "body-angular-velocity-limit: ~A~%" (body-angular-velocity-limit b))
+
+  ; this is a segmentation violation for some reason
+  ;(printf "body-space: ~A~%" (body-space b))
+  (printf "~%"))
+
+(define (dump-shape s title)
+  (printf "~%")
+  (printf "Dumping Shape ~A~%" title)
+  (printf "shape ~A~%" s)
+  (printf "shape-body: ~A~%" (shape-body s))
+  (printf "shape-bb: ~A~%" (shape-bb s))
+  (printf "shape-sensor: ~A~%" (shape-sensor s))
+  (printf "shape-elasticity: ~A~%" (shape-elasticity s))
+  (printf "shape-friction: ~A~%" (shape-friction s))
+  (printf "shape-surface-velocity: ~A~%" (shape-surface-velocity s))
+  (printf "shape-collision-type: ~A~%" (shape-collision-type s))
+  (printf "shape-group: ~A~%" (shape-group s))
+  (printf "shape-layers: ~A~%" (shape-layers s))
+  (printf "~%"))
 
 (example)
