@@ -34,8 +34,6 @@
   (define-record-property world!)
   (define-record-property add-game-object!)
   (define-record-property remove-game-object!)
-  (define-record-property event-handler)
-  (define-record-property event-handler!)
   (define-record-property pass-event-to-game-objects!)
   (define-record-property render-game-objects!)
   (define-record-property update-game-object-bodies!)
@@ -48,8 +46,7 @@
       'scene
       '#((mutable name)
          (mutable game-objects)
-         (mutable world)
-         (mutable event-handler))
+         (mutable world))
 
       #:property name 'name
       #:property name!
@@ -125,13 +122,6 @@
             (if (string= (name go) target-name) #t #f))
           (pred (make-game-object))))
 
-      #:property event-handler 'event-handler
-      #:property event-handler!
-      (lambda (rt)
-        (lambda (new-event-handler)
-          (if (procedure? new-event-handler)
-              (set! (event-handler rt) new-event-handler))))
-
       #:property destroy-game-objects!
       (lambda (rt)
         (lambda ()
@@ -150,25 +140,20 @@
       (() (make-scene-nil-args))
       ((name) (make-scene-single-arg name))
       ((n gos) (make-scene-double-arg n gos))
-      ((n gos w) (make-scene-triple-arg n gos w))
-      ((n gos w eh) (make-scene-quadruple-arg n gos w eh))))
+      ((n gos w) (make-scene-triple-arg n gos w))))
 
   (define make-scene-nil-args
     (lambda ()
-      ((rtd-constructor SCENE) "" '() #f (lambda () '()))))
+      ((rtd-constructor SCENE) "" '() #f)))
 
   (define make-scene-single-arg
     (lambda (name)
-      ((rtd-constructor SCENE) name '() #f (lambda () '()))))
+      ((rtd-constructor SCENE) name '() #f)))
 
   (define make-scene-double-arg
     (lambda (name game-objects)
-      ((rtd-constructor SCENE) name game-objects #f (lambda () '()))))
+      ((rtd-constructor SCENE) name game-objects #f)))
 
   (define make-scene-triple-arg
     (lambda (name game-objects world)
-      ((rtd-constructor SCENE) name game-objects world (lambda () '()))))
-
-  (define make-scene-quadruple-arg
-    (lambda (name game-objects world event-handler)
-      ((rtd-constructor SCENE) name game-objects world event-handler))))
+      ((rtd-constructor SCENE) name game-objects world))))

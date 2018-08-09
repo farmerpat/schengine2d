@@ -262,14 +262,31 @@
             (first-scene (make-scene "_test_scene_name_" '() world))
             (sprite (spr:make-sprite "ship.png" 64 64 (current-window-renderer g)))
             (sprite2 (spr:make-sprite "ship.png" 64 64 (current-window-renderer g)))
-            (ship-body (make-boxed-dynamic-body world 64 64 1))
-            (ship-body2 (make-boxed-dynamic-body world 64 64 10))
+            (ship-body
+              (make-boxed-dynamic-body
+                world
+                (* (*screen->chipmunk-factor*) 64)
+                (* (*screen->chipmunk-factor*)  64)
+                1
+
+              )
+            )
+            (ship-body2
+              (make-boxed-dynamic-body
+                world
+                (* (*screen->chipmunk-factor*) 64)
+                (* (*screen->chipmunk-factor*)  64)
+                10
+
+              )
+            )
             (ground (create-segment-shape
                       (space-static-body (space world))
                       (screen-pos->chipmunk-pos (vect:create 0.0 760.0))
                       (screen-pos->chipmunk-pos (vect:create 1024.0 760.0))
                       1.0))) ;;; thought the formerly 0 "radius" was throwing it..nah
 
+       (printf "converted scaled 64: ~A~%" (* 64 (*screen->chipmunk-factor*)))
        (printf "converted p1: ~A~%" (screen-pos->chipmunk-pos (vect:create 0.0 760.0)))
        (printf "converted p2: ~A~%" (screen-pos->chipmunk-pos (vect:create 1024.0 760.0)))
        ; why not have #:property add-shape on world?
@@ -289,6 +306,34 @@
 
        ((body! ship) ship-body #t)
        ((body! ship2) ship-body2 #t)
+
+       ((event-handler! ship)
+        (lambda (e)
+          (case (sdl2:event-type e)
+            ((key-down)
+             (begin (display (sdl2:keyboard-event-sym e))
+                    (newline)
+                    (case (sdl2:keyboard-event-sym e)
+                      ((left a)
+                       (begin
+                         (display "das left")
+                         (newline)
+                         ;; will have to call
+                         ;; body-reset-forces or
+                         ;; something on all the
+                         ;; bodies somewhere
+                         (body-apply-force
+                           (cp-body ship-body)
+                           (vect:create -4.0 0.0)
+                           (vect:create 0.0 0.0))))
+                      ((right d)
+                       (begin
+                         (display "das right")
+                         (newline)
+                         (body-apply-force
+                           (cp-body ship-body)
+                           (vect:create 4.0 0.0)
+                           (vect:create 0.0 0.0))))))))))
 
        ((game-objects! first-scene) (list ship ship2))
        (set! (current-scene g) first-scene)
