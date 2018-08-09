@@ -12,6 +12,7 @@
 
   (reexport srfi-99)
 
+  (declare (uses world))
   (declare (unit body))
 
   (define-record-property parent-world)
