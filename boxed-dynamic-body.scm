@@ -79,4 +79,5 @@
       ((init-body! bdb))
       (let ((shape (create-box-shape-new (cp-body bdb) w h)))
        ((box-shape! bdb) shape)
+       (space-add-shape (space world) shape)
        bdb))))

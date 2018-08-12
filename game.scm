@@ -229,7 +229,7 @@
           ; we can control overall speed by
           ; setting dt
           ;((process-physics-for-current-scene rt) dt)
-          ((process-physics-for-current-scene rt) 0.00005)
+          ((process-physics-for-current-scene rt) 0.0005)
           ((render-current-scene rt))
           (sdl2:render-present! (current-window-renderer rt))))
         ((shutdown-sdl! rt))))
@@ -293,9 +293,16 @@
        ; don't wat to duplicate work, but still...
        (space-add-shape (space world) ground)
        (set! (shape-friction ground) 1.0)
+       ;; these magic numbers have to be replaced
+       ;; see if there are constants defined alreayd
+       ;; in chicken-chipmunk, or just make my own
+       ;; and stick them on world.
+       (set! (shape-collision-type ground) 2)
 
        (set! (shape-friction (box-shape ship-body)) 0.3)
        (set! (shape-friction (box-shape ship-body2)) 0.5)
+       (set! (shape-collision-type (box-shape ship-body)) 1)
+       (set! (shape-collision-type (box-shape ship-body2)) 1)
 
        ;(dump-shape ground "ground")
        ;(dump-body (cp-body ship-body) "ship-body")
@@ -307,33 +314,115 @@
        ((body! ship) ship-body #t)
        ((body! ship2) ship-body2 #t)
 
-       ((event-handler! ship)
-        (lambda (e)
-          (case (sdl2:event-type e)
-            ((key-down)
-             (begin (display (sdl2:keyboard-event-sym e))
-                    (newline)
-                    (case (sdl2:keyboard-event-sym e)
-                      ((left a)
-                       (begin
-                         (display "das left")
-                         (newline)
-                         ;; will have to call
-                         ;; body-reset-forces or
-                         ;; something on all the
-                         ;; bodies somewhere
-                         (body-apply-force
-                           (cp-body ship-body)
-                           (vect:create -4.0 0.0)
-                           (vect:create 0.0 0.0))))
-                      ((right d)
-                       (begin
-                         (display "das right")
-                         (newline)
-                         (body-apply-force
-                           (cp-body ship-body)
-                           (vect:create 4.0 0.0)
-                           (vect:create 0.0 0.0))))))))))
+       (define ship-max-x 8.0)
+       (define ship-min-x -8.0)
+
+       (body-apply-force
+         (cp-body ship-body)
+         (vect:create 0.0 10.0)
+         (vect:create 0.0 0.0))
+
+       ;(display (space-collision-handlers (space world)))
+       ;(newline)
+       ; its seems less than ideal that the default
+       ; behavior when two shapes, for which there is
+       ; not an explicitly set handler for those two
+       ; shape-collision-type(s), collide, the system
+       ; barfs and dies.
+       ; maybe it tries looking up a hash table entry
+       ; and it just fails when it can't find one.
+       ; if so, I could change it to supply defaults
+       ; that are just (lambda (a b) #t). returning
+       ; #t allows the default behavior to take place
+       ; (e.g. whatever then engine would normally do)
+       ; ...or some such thing
+       (space-add-collision-handler
+         (space world)
+         1
+         1
+         ; collision begin
+         (lambda (a b ) #t)
+         ; presolve
+         (lambda (a b) #t)
+         ; postsolve
+         (lambda (a b) #t)
+         ; separate-func
+         (lambda (a b) #t))
+
+       (space-add-collision-handler
+         (space world)
+         1
+         2
+         ; collision begin
+         (lambda (a b ) #t)
+         ; presolve
+         (lambda (a b) #t)
+         ; postsolve
+         (lambda (a b) #t)
+         ; separate-func
+         (lambda (a b) #t))
+
+       ;((event-handler! ship)
+        ;(lambda (e)
+          ;(case (sdl2:event-type e)
+            ;((key-down)
+             ;(begin ;;(display (sdl2:keyboard-event-sym e))
+                    ;;;(newline)
+                    ;(case (sdl2:keyboard-event-sym e)
+                      ;((left a)
+                       ;(begin
+                         ;;; will have to call
+                         ;;; body-reset-forces or
+                         ;;; something on all the
+                         ;;; bodies somewhere
+                         ;;; we shouldn't be applying force
+                         ;;; if its velocity is over a maximum
+                         ;(let ((current-x-vel (vect:x (body-force (cp-body ship-body)))))
+                          ;; e.g. -4 > -8
+                          ;(when (> current-x-vel ship-min-x)
+                            ;;; as we approach ship-min-x, we should taper this...
+                            ;(let ((x-force (+ ship-min-x (abs current-x-vel))))
+                             ;(body-apply-force
+                               ;(cp-body ship-body)
+                               ;(vect:create x-force 0.0)
+                               ;(vect:create 0.0 0.0)))))))
+                      ;((right d)
+                       ;(begin
+                         ;(body-apply-force
+                           ;(cp-body ship-body)
+                           ;(vect:create 4.0 0.0)
+                           ;(vect:create 0.0 0.0)))))))
+            ;((key-up)
+             ;(begin
+               ;(case (sdl2:keyboard-event-sym e)
+                 ;((left a)
+                  ;(begin
+                    ;(display "left release")
+                    ;(newline)
+
+                    ;;(display "force before reset-forces: ")
+                    ;;(display (body-force (cp-body ship-body)))
+                    ;;(newline)
+                    ;(body-reset-forces (cp-body ship-body))
+                    ;;(display "force after reset-forces: ")
+                    ;;(display (body-force (cp-body ship-body)))
+                    ;;(newline)
+
+                    ;))
+                 ;((right d)
+                  ;(begin
+                    ;(display "right release")
+                    ;(newline)
+                    ;;; what if we make x the opposite of what it is now?
+                    ;(let ((new-x (* -1 (vect:x (body-velocity (cp-body ship-body))))))
+                     ;(printf "new-x: ~A~%" new-x)
+                     ;(body-reset-forces (cp-body ship-body))
+                     ;(body-apply-force
+                       ;(cp-body ship-body)
+                       ;;(vect:create -4.0 0.0)
+                       ;(vect:create new-x 0.0)
+                       ;(vect:create 0.0 0.0)))
+                    ;))))))))
 
        ((game-objects! first-scene) (list ship ship2))
        (set! (current-scene g) first-scene)
