@@ -7,17 +7,14 @@
   ; it could be called by a handler
   ; added to the window resize event.
   ; that seems hairy...
-  (define *conversion-scale* (make-parameter 100.0))
-  (*conversion-scale* 30.0)
+  (define *conversion-scale* (make-parameter 125.0))
+
   (define *half-screen-width* (make-parameter 512))
   (define *half-screen-height* (make-parameter 384))
   (define *screen->chipmunk-factor* (make-parameter (/ 1 (*conversion-scale*))))
   (define *chipmunk->screen-factor* (make-parameter (*conversion-scale*)))
 
   (define (screen-pos->chipmunk-pos screen-pos)
-    ;; aren't you supposed to perform as many calculations as possible
-    ;; prior to scaling?
-    ;; TODO: ^
     (let* ((old-x (vect:x screen-pos))
            (old-y (vect:y screen-pos))
            (new-x 0)
@@ -33,6 +30,8 @@
              (set! new-y (- (*half-screen-height*) old-y))))
 
       (vect:create
-        (inexact->exact (round (* (*screen->chipmunk-factor*) new-x)))
-        (inexact->exact (round (* (*screen->chipmunk-factor*) new-y))))))
+        (* (*screen->chipmunk-factor*) new-x)
+        (* (*screen->chipmunk-factor*) new-y))))
+
+  (define (chipmunk-pos->screen-pos screen-pos) '())
 )

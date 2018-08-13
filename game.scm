@@ -265,8 +265,8 @@
             (ship-body
               (make-boxed-dynamic-body
                 world
-                (* (*screen->chipmunk-factor*) 64)
-                (* (*screen->chipmunk-factor*)  64)
+                (* (*screen->chipmunk-factor*) 60)
+                (* (*screen->chipmunk-factor*)  60)
                 1
 
               )
@@ -274,26 +274,26 @@
             (ship-body2
               (make-boxed-dynamic-body
                 world
-                (* (*screen->chipmunk-factor*) 64)
-                (* (*screen->chipmunk-factor*)  64)
+                (* (*screen->chipmunk-factor*) 60)
+                (* (*screen->chipmunk-factor*)  60)
                 10
 
               )
             )
             (ground (create-segment-shape
                       (space-static-body (space world))
-                      (screen-pos->chipmunk-pos (vect:create 0.0 760.0))
-                      (screen-pos->chipmunk-pos (vect:create 1024.0 760.0))
-                      1.0))) ;;; thought the formerly 0 "radius" was throwing it..nah
+                      (screen-pos->chipmunk-pos (vect:create 0.0 768.0))
+                      (screen-pos->chipmunk-pos (vect:create 1024.0 768.0))
+                      1.0)))
 
        (printf "converted scaled 64: ~A~%" (* 64 (*screen->chipmunk-factor*)))
        (printf "converted p1: ~A~%" (screen-pos->chipmunk-pos (vect:create 0.0 760.0)))
        (printf "converted p2: ~A~%" (screen-pos->chipmunk-pos (vect:create 1024.0 760.0)))
        ; why not have #:property add-shape on world?
-       ; don't wat to duplicate work, but still...
+       ; don't want to duplicate work, but still...
        (space-add-shape (space world) ground)
        (set! (shape-friction ground) 1.0)
-       ;; these magic numbers have to be replaced
+       ;; these magic numbers have to be replaced.
        ;; see if there are constants defined alreayd
        ;; in chicken-chipmunk, or just make my own
        ;; and stick them on world.
@@ -317,10 +317,10 @@
        (define ship-max-x 8.0)
        (define ship-min-x -8.0)
 
-       (body-apply-force
-         (cp-body ship-body)
-         (vect:create 0.0 10.0)
-         (vect:create 0.0 0.0))
+       ;(body-apply-force
+         ;(cp-body ship-body)
+         ;(vect:create 0.0 10.0)
+         ;(vect:create 0.0 0.0))
 
        ;(display (space-collision-handlers (space world)))
        ;(newline)

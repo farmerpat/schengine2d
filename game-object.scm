@@ -91,10 +91,7 @@
       (lambda (rt)
         (lambda ()
           (when (body? (body rt))
-            ; scale should be in a game manager?
             (let* ((body-pos (body-position (cp-body (body rt))))
-                   ;(pos-x (* 100 (vect:x body-pos)))
-                   ;(pos-y (* 100 (vect:y body-pos)))
                    (pos-x (* (*chipmunk->screen-factor*) (vect:x body-pos)))
                    (pos-y (* (*chipmunk->screen-factor*) (vect:y body-pos)))
                    (half-screen-width 512)
@@ -110,9 +107,6 @@
                      (set! new-y (- half-screen-width pos-y)))
                     ((negative? pos-y)
                      (set! new-y (+ half-screen-width (abs pos-y)))))
-
-              ;(printf "pos-x: ~A, new-x: ~A~%" pos-x new-x)
-              ;(printf "pos-y: ~A, new-y: ~A~%" pos-y new-y)
 
               ((pos! rt)
                (vect:create
