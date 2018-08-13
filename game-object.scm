@@ -92,26 +92,8 @@
         (lambda ()
           (when (body? (body rt))
             (let* ((body-pos (body-position (cp-body (body rt))))
-                   (pos-x (* (*chipmunk->screen-factor*) (vect:x body-pos)))
-                   (pos-y (* (*chipmunk->screen-factor*) (vect:y body-pos)))
-                   (half-screen-width 512)
-                   (half-screen-height 384)
-                   (new-x 512)  ; new-x,new-y initialized for 0 case
-                   (new-y 384))
-
-              (cond ((positive? pos-x)
-                     (set! new-x (+ half-screen-width pos-x)))
-                    ((negative? pos-x)
-                     (set! new-x (- half-screen-width (abs pos-x)))))
-              (cond ((positive? pos-y)
-                     (set! new-y (- half-screen-width pos-y)))
-                    ((negative? pos-y)
-                     (set! new-y (+ half-screen-width (abs pos-y)))))
-
-              ((pos! rt)
-               (vect:create
-                 (inexact->exact (round new-x))
-                 (inexact->exact (round new-y))))))))
+                   (converted-pos (chipmunk-pos->screen-pos body-pos)))
+              ((pos! rt) converted-pos)))))
 
       #:property receive-event!
       (lambda (rt)
@@ -121,8 +103,9 @@
       #:property destroy!
       (lambda (rt)
         (lambda ()
-          (if (sprite? (sprite rt))
-              ((destroy-resources! (sprite rt))))
+          (when (sprite? (sprite rt))
+            ((destroy-resources! (sprite rt)))
+            ((sprite! rt) #f))
           (display "im the destroyer of GAME_OBJECTs")
           (newline)))))
 
