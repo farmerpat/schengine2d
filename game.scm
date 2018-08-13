@@ -48,9 +48,14 @@
 (define-record-property run!)
 ; this name is clobbering other names, and that needs to be dealt with
 (define-record-property shutdown-sdl!)
+(define-record-property shutdown-current-scene!)
 (define-record-property render-current-scene)
 (define-record-property feed-input-to-current-scene)
 (define-record-property process-physics-for-current-scene)
+(define-record-property exit-handler)
+(define-record-property exit-handler-called)
+(define-record-property set-exit-handler-called!)
+(define-record-property clear-exit-handler-called!)
 
 (define *old-ticks* (make-parameter 0))
 
@@ -71,7 +76,8 @@
        (mutable current-window-renderer)
        (mutable current-scene)
        (mutable verbose-logging)
-       (mutable do-quit))
+       (mutable do-quit)
+       (mutable exit-handler-called))
 
     ; consider changing all these rts to
     ; the record type name or something...
@@ -131,6 +137,17 @@
       (lambda ()
         (set! (do-quit rt) #f)))
 
+    #:property exit-handler-called 'exit-handler-called
+    #:property set-exit-handler-called!
+    (lambda (rt)
+      (lambda ()
+        (set! (exit-handler-called rt) #t)))
+
+    #:property clear-exit-handler-called!
+    (lambda (rt)
+      (lambda ()
+        (set! (exit-handler-called rt) #f)))
+
     #:property render-current-scene
     (lambda (rt)
       (lambda ()
@@ -164,8 +181,7 @@
             (window-height rt)
             '(shown resizable)))
         (set! (current-window-renderer rt) (sdl2:create-renderer! (window rt)))))
-        ;(set! (current-window-renderer rt) (sdl2:create-renderer! (window rt) -1 '(present-vsync)))))
-              ;(sdl2:create-renderer! (window rt) -1 '(present-vsync))
+        ;(set! (current-window-renderer rt) (sdl2:create-renderer! (window rt) -1 '(present-vsync)))
 
     #:property game-init!
     (lambda (rt)
@@ -174,15 +190,14 @@
         (sdl2:init! '(video events joystick))
         (define img-init-successful-formats (img:init! '(jpg png tif)))
         (printf "img-init-successful-formats: ~A~%" img-init-successful-formats)
-        ; what is this is can we have some kind of a global tear down
-        ; that will destroy all pointers that register with it?
-        ; that would be neato
-        (on-exit sdl2:quit!)
+        (on-exit (exit-handler rt))
 
         (let ((original-handler (current-exception-handler)))
          (current-exception-handler
            (lambda (exception)
-             (sdl2:quit!)
+             (when (not (exit-handler-called rt))
+               ((set-exit-handler-called! rt))
+               ((exit-handler rt)))
              (original-handler exception))))
 
         ((init-window! rt))))
@@ -227,12 +242,12 @@
 
           ((clear-screen! rt))
           ; we can control overall speed by
-          ; setting dt
+          ; setting dt...iirc chipmunk recommends it
           ;((process-physics-for-current-scene rt) dt)
-          ((process-physics-for-current-scene rt) 0.0005)
+          ((process-physics-for-current-scene rt) 0.001)
           ((render-current-scene rt))
           (sdl2:render-present! (current-window-renderer rt))))
-        ((shutdown-sdl! rt))))
+        ((exit-handler rt))))
 
     #:property shutdown-sdl!
     (lambda (rt)
@@ -240,6 +255,21 @@
         (sdl2:destroy-window! (window rt))
         (img:quit!)
         (sdl2:quit!)))
+
+    #:property exit-handler
+    (lambda (rt)
+      (lambda ()
+        (when (not (exit-handler-called rt))
+          ((shutdown-current-scene! rt))
+          ((shutdown-sdl! rt))
+          ((set-exit-handler-called! rt)))))
+
+    #:property shutdown-current-scene!
+    (lambda (rt)
+      (lambda ()
+        (if (scene? (current-scene rt))
+            ((destroy-game-objects! (current-scene rt))))))
+
     )
   )
 
@@ -247,7 +277,7 @@
   (lambda ()
     ((rtd-constructor GAME)
      1024 768 "schengine" '()
-     #f #f #f #f #f)))
+     #f #f #f #f #f #f)))
 
 (define example
   (lambda ()
