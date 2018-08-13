@@ -15,6 +15,7 @@
   (reexport srfi-99)
   (reexport body)
 
+  (declare (uses world))
   (declare (uses body))
   (declare (unit dynamic-body))
 

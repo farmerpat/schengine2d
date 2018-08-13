@@ -4,4 +4,5 @@ test
 *.o
 *.import.scm
 game
+main
 scratch.scm
