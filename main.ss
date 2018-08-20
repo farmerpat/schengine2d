@@ -3,26 +3,19 @@
 
 (define *quit* (make-parameter #f))
 
-(sdl-library-init)
-(define retval  (sdl-init (sdl-initialization 'video 'events)))
+(define *bg-color* (make-parameter (list 80 80 80 255)))
 
-(define window (sdl-create-window "test" 50 50 800 600 (sdl-window-flags 'shown)))
+(define (bg-color-r)
+  (car (*bg-color*)))
 
-(define renderer (sdl-create-renderer window -1 (sdl-renderer-flags 'accelerated)))
-(define bmp-surface (sdl-load-bmp "ship.bmp"))
-(define img-texture (sdl-create-texture-from-surface renderer bmp-surface))
+(define (bg-color-g)
+  (cadr (*bg-color*)))
 
-(define gen-rect
-  (case-lambda
-    ((gw gh) (gen-rect 0 0 gw gh))
-    ((gx gy gw gh)
-     (new-struct sdl-rect-t (x gx) (y gy) (w gw) (h gh)))))
+(define (bg-color-b)
+  (caddr (*bg-color*)))
 
-(define src-rect
-  (gen-rect 64 64))
-
-(define dest-rect
-  (gen-rect 200 200 64 64))
+(define (bg-color-a)
+  (cadddr (*bg-color*)))
 
 (define (sdl-common-event-t? ob)
   (and (ftype-pointer? ob)
@@ -31,9 +24,6 @@
 (define (sdl-event-t? ob)
   (and (ftype-pointer? ob)
        (ftype-pointer? sdl-event-t ob)))
-
-(define event
-  (new-struct sdl-event-t))
 
 (define (get-type event)
   (if (ftype-pointer? event)
@@ -76,6 +66,12 @@
 (define (get-keysym-scancode ksm)
   (ftype-&ref sdl-keysym-t (scancode) ksm))
 
+(define gen-rect
+  (case-lambda
+    ((gw gh) (gen-rect 0 0 gw gh))
+    ((gx gy gw gh)
+     (new-struct sdl-rect-t (x gx) (y gy) (w gw) (h gh)))))
+
 (define *event-handlers* (make-parameter '()))
 
 (define (register-event-handler eh)
@@ -105,16 +101,45 @@
            (if (pred? kbe)
                (callback)))))))
 
+(define (clear-renderer)
+  (sdl-set-render-draw-color
+    renderer
+    (bg-color-r)
+    (bg-color-g)
+    (bg-color-b)
+    (bg-color-a))
+  (sdl-render-fill-rect renderer (gen-rect 1024 768)))
+
+(sdl-library-init)
+
+(define retval  (sdl-init (sdl-initialization 'video 'events)))
+
+(define window (sdl-create-window "test" 50 50 800 600 (sdl-window-flags 'shown)))
+
+(define renderer (sdl-create-renderer window -1 (sdl-renderer-flags 'accelerated)))
+(define bmp-surface (sdl-load-bmp "ship.bmp"))
+(define img-texture (sdl-create-texture-from-surface renderer bmp-surface))
+
+(define src-rect
+  (gen-rect 64 64))
+
+(define dest-rect
+  (gen-rect 200 200 64 64))
+
+(define event
+  (new-struct sdl-event-t))
+
 (register-event-handler
   (generate-keydown-handler
     (generate-kbd-code-predicate 'escape)
     (lambda () (*quit* #t))))
 
 (let game-loop ()
- (sdl-render-copy renderer img-texture src-rect dest-rect)
- (sdl-render-present renderer)
  (sdl-poll-event event)
  (pass-event-to-event-handlers event)
+ (clear-renderer)
+ (sdl-render-copy renderer img-texture src-rect dest-rect)
+ (sdl-render-present renderer)
 
  (if (not (*quit*))
      (game-loop)))
