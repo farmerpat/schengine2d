@@ -77,6 +77,22 @@
 (define (register-event-handler eh)
   (*event-handlers* (cons eh (*event-handlers*))))
 
+;; i am repeating myself with
+;; these parameters whose values
+;; are lists of procedures
+;; that we want to call w/ or w/o
+;; arguments. abstract away...
+(define *draw-procedures* (make-parameter '()))
+
+(define (register-draw-procedure dp)
+  (*draw-procedures* (cons dp (*draw-procedures*))))
+
+(define (call-all lst)
+  (cond ((null? lst) '())
+        ((procedure? (car lst))
+         ((car lst))
+         (call-all (cdr lst)))))
+
 (define (call-all-with-arg lst arg)
   (cond ((null? lst) '())
         ((procedure? (car lst))
@@ -85,6 +101,9 @@
 
 (define (pass-event-to-event-handlers event)
   (call-all-with-arg (*event-handlers*) event))
+
+(define (call-draw-procedures)
+  (call-all (*draw-procedures*)))
 
 (define (generate-kbd-code-predicate sym)
   (lambda (kbd-event)
@@ -129,6 +148,16 @@
 (define event
   (new-struct sdl-event-t))
 
+;; should create syntax that will
+;; create a sprite and register it
+;; to be drawn.
+;; perhaps the draw procedure is kept
+;; as a property of the "sprite" in
+;; a closure
+(register-draw-procedure
+  (lambda ()
+    (sdl-render-copy renderer img-texture src-rect dest-rect)))
+
 (register-event-handler
   (generate-keydown-handler
     (generate-kbd-code-predicate 'escape)
@@ -138,7 +167,7 @@
  (sdl-poll-event event)
  (pass-event-to-event-handlers event)
  (clear-renderer)
- (sdl-render-copy renderer img-texture src-rect dest-rect)
+ (call-draw-procedures)
  (sdl-render-present renderer)
 
  (if (not (*quit*))
