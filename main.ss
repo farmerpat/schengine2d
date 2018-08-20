@@ -97,16 +97,18 @@
            (code (ftype-ref int () key-code-ptr)))
       (if (eq? (sdl-keycode sym) code) #t #f))))
 
-(define kbd-event-code-escape? (generate-kbd-code-predicate 'escape))
+(define (generate-keydown-handler pred? callback)
+  (lambda (event)
+    (when (is-key-down-event? event)
+      (let ((kbe (get-kbd-event event)))
+       (if (ftype-pointer? kbe)
+           (if (pred? kbe)
+               (callback)))))))
 
-(define (esc-key-handler event)
-  (when (is-key-down-event? event)
-    (let ((kbe (get-kbd-event event)))
-     (if (ftype-pointer? kbe)
-         (if (kbd-event-code-escape? kbe)
-             (*quit* #t))))))
-
-(register-event-handler esc-key-handler)
+(register-event-handler
+  (generate-keydown-handler
+    (generate-kbd-code-predicate 'escape)
+    (lambda () (*quit* #t))))
 
 (let game-loop ()
  (sdl-render-copy renderer img-texture src-rect dest-rect)
